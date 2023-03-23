@@ -1,6 +1,10 @@
 <template>
   <el-card shadow="hover">
-    <el-button type="primary" class="el-icon-plus" @click="addTrademark">
+    <el-button
+      type="primary"
+      class="el-icon-plus"
+      @click="showTrademarkModel({ id: 0, tmName: '', logoUrl: '' })"
+    >
       添加品牌
     </el-button>
 
@@ -38,12 +42,31 @@
       </el-table-column>
       <el-table-column label="操作">
         <template v-slot="{ row }">
-          <el-button type="warning" size="small" class="el-icon-edit" />
-          <el-button type="danger" size="small" class="el-icon-delete" />
+          <el-button
+            type="warning"
+            size="small"
+            class="el-icon-edit"
+            @click="showTrademarkModel(row)"
+          />
+
+          <el-popconfirm
+            icon="el-icon-info"
+            icon-color="red"
+            :title="`确认删除${row.tmName}吗`"
+            @onConfirm="delTrademark(row.id)"
+            style="margin-left: 5px"
+          >
+            <el-button
+              slot="reference"
+              type="danger"
+              size="small"
+              class="el-icon-delete"
+              @click="delTrademark(row.id)"
+            />
+          </el-popconfirm>
         </template>
       </el-table-column>
     </el-table>
-
     <el-pagination
       :current-page="currentPage"
       :page-size="pageSize"
@@ -53,11 +76,64 @@
       @size-change="sizeChange"
       @current-change="currentChange"
     />
+    <el-dialog
+      :title="`${ruleForm.id ? '修改' : '添加'}品牌`"
+      :visible.sync="dialogVisible"
+      width="50%"
+      :before-close="handleClose"
+    >
+      <el-form
+        :model="ruleForm"
+        status-icon
+        :rules="rules"
+        ref="ruleForm"
+        label-width="100px"
+        class="demo-ruleForm"
+      >
+        <el-form-item label="品牌名称" prop="tmName">
+          <el-input v-model="ruleForm.tmName" autocomplete="off"></el-input>
+        </el-form-item>
+        <el-form-item label="品牌logo" prop="logoUrl">
+          <el-upload
+            class="avatar-uploader"
+            :action="`${BASE_URL}/admin/product/fileUpload`"
+            :show-file-list="false"
+            :on-success="handleAvatarSuccess"
+            :before-upload="beforeAvatarUpload"
+          >
+            <img
+              v-if="ruleForm.logoUrl"
+              :src="ruleForm.logoUrl"
+              class="avatar"
+            />
+            <i v-else class="el-icon-plus avatar-uploader-icon"></i>
+          </el-upload>
+        </el-form-item>
+
+        <!-- <el-form-item>
+          <el-button type="primary" @click="submitForm('ruleForm')"
+            >提交</el-button
+          >
+          <el-button @click="resetForm('ruleForm')">重置</el-button>
+        </el-form-item> -->
+      </el-form>
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="dialogVisible = false">取 消</el-button>
+        <el-button type="primary" @click="submitForm('ruleForm')"
+          >确 定</el-button
+        >
+      </span>
+    </el-dialog>
   </el-card>
 </template>
 
 <script>
-import { getTrademarkListApi } from "@/api/product/trademark";
+import {
+  getTrademarkListApi,
+  addTrademarkApi,
+  updateTrademarkApi,
+  delTrademarkApi,
+} from "@/api/product/trademark";
 export default {
   name: "Trademark",
   mounted() {
@@ -70,6 +146,20 @@ export default {
       total: 0,
       trademarkList: [],
       loading: false,
+      dialogVisible: false,
+      ruleForm: {
+        id: 0,
+        logoUrl: "",
+        tmName: "",
+      },
+      rules: {
+        logoUrl: [{ required: true, message: "请选择图片" }],
+        tmName: [
+          { required: true, message: "请输入品牌名称", trigger: "blur" },
+          { min: 2, max: 10, message: "品牌名称长度为2-10", trigger: "blur" },
+        ],
+      },
+      BASE_URL: process.env.VUE_APP_BASE_API,
     };
   },
   methods: {
@@ -82,7 +172,6 @@ export default {
       this.total = total;
       this.loading = false;
     },
-    addTrademark() {},
     sizeChange(size) {
       this.pageSize = size;
       this.getTrademarkList();
@@ -91,11 +180,81 @@ export default {
       this.currentPage = current;
       this.getTrademarkList();
     },
+    // 关闭模态框
+    handleClose(done) {
+      this.$confirm("确认关闭？")
+        .then((_) => {
+          done();
+        })
+        .catch((_) => {});
+    },
+    // 添加品牌
+    showTrademarkModel(row) {
+      this.dialogVisible = true;
+      if (row.id) {
+        this.ruleForm.logoUrl = row.logoUrl;
+        this.ruleForm.tmName = row.tmName;
+        this.ruleForm.id = row.id;
+      }
+      this.$nextTick(() => {
+        this.$refs["ruleForm"]?.clearValidate();
+      });
+    },
+    // 上传头像图片成功
+    handleAvatarSuccess(res, file) {
+      // this.imageUrl = URL.createObjectURL(file.raw);
+      this.ruleForm.logoUrl = res.data;
+      this.$refs["ruleForm"].clearValidate(["logoUrl"]);
+      console.log(res.data);
+    },
+    // 上传图片前校验
+    beforeAvatarUpload(file) {
+      const isJPG = file.type === "image/jpeg";
+      const isLt2M = file.size / 1024 / 1024 < 2;
+      if (!isJPG) {
+        this.$message.error("上传头像图片只能是 JPG 格式!");
+      }
+      if (!isLt2M) {
+        this.$message.error("上传头像图片大小不能超过 2MB!");
+      }
+      return isJPG && isLt2M;
+    },
+    // 提交表单
+    submitForm(formName) {
+      this.$refs[formName].validate((valid) => {
+        if (valid) {
+          if (ruleForm.id) {
+            this.$message.success("修改成功");
+            this.reqUpdateTrademark();
+          } else {
+            this.$message.success("添加成功");
+            this.reqAddTrademark();
+          }
+          this.dialogVisible = false;
+        } else {
+          console.log("error submit!!");
+          return false;
+        }
+      });
+    },
+    // 添加品牌
+    async reqAddTrademark() {
+      await addTrademarkApi(this.ruleForm.tmName, this.ruleForm.logoUrl);
+    },
+    // 更新
+    async reqUpdateTrademark() {
+      await updateTrademarkApi(ruleForm);
+    },
+    // 删除
+    async delTrademark(id) {
+      await delTrademarkApi(id);
+      this.getTrademarkList();
+      console.log(123);
+    },
   },
   watch: {},
   computed: {},
 };
-// import { Pagination } from "element-ui";
 </script>
 
 <style lang="scss" scoped>
@@ -144,5 +303,30 @@ export default {
     height: 178px;
     display: block;
   }
+}
+.avatar-uploader .el-upload {
+  border: 1px dashed #d9d9d9;
+  border-radius: 6px;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+.avatar-uploader .el-upload:hover {
+  border-color: #409eff;
+}
+.avatar-uploader-icon {
+  font-size: 28px;
+  color: #8c939d;
+  width: 178px;
+  height: 178px;
+  line-height: 178px;
+  text-align: center;
+  border: 1px solid #ddd;
+}
+.avatar {
+  width: 178px;
+  height: 178px;
+  display: block;
+  border-radius: 5%;
 }
 </style>
