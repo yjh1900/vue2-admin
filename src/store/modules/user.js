@@ -1,31 +1,31 @@
-import { login, logout, getInfo } from '@/api/user'
-import { getToken, setToken, removeToken } from '@/utils/auth'
-import { resetRouter } from '@/router'
+import { login, logout, getInfo } from "@/api/user";
+import { getToken, setToken, removeToken } from "@/utils/auth";
+import { resetRouter } from "@/router";
 
 const getDefaultState = () => {
   return {
     token: getToken(),
-    name: '',
-    avatar: ''
-  }
-}
+    name: "",
+    avatar: "",
+  };
+};
 
-const state = getDefaultState()
+const state = getDefaultState();
 
 const mutations = {
   RESET_STATE: (state) => {
-    Object.assign(state, getDefaultState())
+    Object.assign(state, getDefaultState());
   },
   SET_TOKEN: (state, token) => {
-    state.token = token
+    state.token = token;
   },
   SET_NAME: (state, name) => {
-    state.name = name
+    state.name = name;
   },
   SET_AVATAR: (state, avatar) => {
-    state.avatar = avatar
-  }
-}
+    state.avatar = avatar;
+  },
+};
 
 const actions = {
   // user login
@@ -46,18 +46,18 @@ const actions = {
   // },
 
   async login({ commit }, userInfo) {
-    const { username, password } = userInfo
+    const { username, password } = userInfo;
     try {
       const res = await login({
         username: username.trim(),
-        password: password
-      })
-      const { data } = res
-      commit('SET_TOKEN', data.token)
-      setToken(data.token)
+        password: password,
+      });
+      const { data } = res;
+      commit("SET_TOKEN", data.token);
+      setToken(data.token);
     } catch (error) {
       // throw error;
-      return Promise.reject(error)
+      return Promise.reject(error);
     }
   },
 
@@ -98,15 +98,15 @@ const actions = {
   // },
 
   async getInfo({ commit, state }) {
-    const res = await getInfo(state.token)
-    const { data } = res
+    const res = await getInfo(state.token);
+    const { data } = res;
     if (!data) {
-      return Promise.reject('Verification failed, please Login again.')
+      return Promise.reject("Verification failed, please Login again.");
     }
-    const { name, avatar } = data
-    commit('SET_NAME', name)
-    commit('SET_AVATAR', avatar)
-    return data
+    const { name, avatar } = data;
+    commit("SET_NAME", name);
+    commit("SET_AVATAR", avatar);
+    return data;
   },
 
   // user logout
@@ -127,29 +127,29 @@ const actions = {
 
   async logout({ commit, state }) {
     try {
-      await logout(state.token)
-      removeToken() // must remove  token  first
-      resetRouter()
-      commit('RESET_STATE')
-      resolve()
+      await logout(state.token);
+      removeToken(); // must remove  token  first
+      resetRouter();
+      commit("RESET_STATE");
+      resolve();
     } catch (error) {
-      return Promise.reject(error)
+      return Promise.reject(error);
     }
   },
 
   // remove token
   resetToken({ commit }) {
     return new Promise((resolve) => {
-      removeToken() // must remove  token  first
-      commit('RESET_STATE')
-      resolve()
-    })
-  }
-}
+      removeToken(); // must remove  token  first
+      commit("RESET_STATE");
+      resolve();
+    });
+  },
+};
 
 export default {
   namespaced: true,
   state,
   mutations,
-  actions
-}
+  actions,
+};

@@ -83,6 +83,7 @@ export default {
     ]),
     // 更新3category3Id
     setCategory3Id() {
+      if (!this.category3Id) return;
       // 直接commit一个mutation,去更新id值
       this.$store.commit("category/CHANGE_3ID", this.category3Id);
     },
@@ -90,6 +91,7 @@ export default {
   watch: {
     category1Id: {
       handler(newV) {
+        if (!newV) return;
         this.getCategory2List(this.category1Id);
         // 这里置为undefine会报错，待解决
         this.category2Id = "";
@@ -98,6 +100,7 @@ export default {
     },
     category2Id: {
       handler(newV) {
+        if (!newV) return;
         this.getCategory3List(this.category2Id);
         this.category3Id = "";
       },

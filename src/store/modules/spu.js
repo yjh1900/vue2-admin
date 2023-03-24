@@ -34,12 +34,10 @@ const mutations = {
 const actions = {
   async getCategory1List({ commit }) {
     const list1 = await getCategory1Api();
-    console.log(list1);
     commit("GET_CATEGORY_1_LIST", list1.data);
   },
   async getCategory2List({ commit }, c1Id) {
     const list2 = await getCategory2Api(c1Id);
-
     commit("GET_CATEGORY_2_LIST", { list2: list2.data, c1Id });
   },
 };

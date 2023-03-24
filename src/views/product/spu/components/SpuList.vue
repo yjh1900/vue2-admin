@@ -5,7 +5,7 @@
         type="primary"
         class="el-icon-plus"
         @click="addHandle()"
-        :disabled="!!category3Id"
+        :disabled="!category3Id"
         >添加SPU</el-button
       >
       <el-table v-loading="loading" :data="spuList" class="mt-20" border>
@@ -28,7 +28,7 @@
             >
               <el-button
                 type="warning"
-                :icon="Edit"
+                class="el-icon-edit"
                 size="small"
                 @click="editHandle(row)"
               />
@@ -37,11 +37,16 @@
             <el-popconfirm
               confirm-button-text="确认"
               cancel-button-text="取消"
-              :title="`确认删除${row.attrName}吗`"
+              :title="`确认balabala${row.spuName}吗`"
               @confirm="deleteHandle(row)"
             >
               <template #reference>
-                <el-button type="info" :icon="InfoFilled" size="small" />
+                <el-button
+                  type="info"
+                  style="margin-left: 10px"
+                  class="el-icon-info"
+                  size="small"
+                />
               </template>
             </el-popconfirm>
 
@@ -60,7 +65,11 @@
                     content="删除"
                     placement="bottom-start"
                   >
-                    <el-button type="danger" :icon="Delete" size="small" />
+                    <el-button
+                      type="danger"
+                      class="el-icon-delete"
+                      size="small"
+                    />
                   </el-tooltip>
                 </div>
               </template>
@@ -90,9 +99,9 @@ import { mapState } from "vuex";
 
 export default {
   name: "SpuList",
-  mounted() {
-    this.getSpuList();
-  },
+  // 注入
+  inject: ["parent"],
+  mounted() {},
   data: () => {
     return {
       total: 0, // 数据总条数
@@ -121,29 +130,42 @@ export default {
       this.getSpuList();
     },
     addSkuHandle: function (row) {
+      console.log(row);
       this.curSpuItem = row;
-      this.isComponentShow = 2;
+      this.parent.isShowView = 3;
       this.isSpuListShow = false;
     },
     addHandle: function () {
-      this.isComponentShow = 1;
+      this.parent.isShowView = 2;
       this.isSpuListShow = false;
     },
     editHandle: function (row) {
-      this.curSpuItem = row;
-      this.isComponentShow = 1;
+      this.parent.curSpuItem = row;
+      this.parent.isShowView = 2;
     },
-    deleteHandle: function (row) {},
+    deleteHandle: function (row) {
+      // console.log(row);
+    },
     getSpuList: async function () {
       this.loading = true;
       const res = await getSpuListApi({
         limit: this.pageSize,
         page: this.currentPage,
-        category3Id: 1,
+        category3Id: this.category3Id,
       });
-      this.spuList = res.records;
-      this.total = res.total;
+      this.spuList = res.data.records;
+      this.total = res.data.total;
       this.loading = false;
+    },
+  },
+  watch: {
+    category3Id: {
+      handler(val) {
+        console.log(val, "3id");
+        // 3id置空之后将列表情况
+        if (!val) return (this.spuList = []);
+        this.getSpuList();
+      },
     },
   },
 };

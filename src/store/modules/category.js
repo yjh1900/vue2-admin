@@ -30,12 +30,13 @@ const mutations = {
     state.category3List = [];
   },
   GET_CATEGORY_3_LIST(state, { list3, c2Id }) {
-    state.category1Id = c2Id;
+    state.category2Id = c2Id;
     state.category3List = list3;
     state.category3Id = undefined;
   },
   CHANGE_3ID(state, c3Id) {
     state.category3Id = c3Id;
+    console.log(c3Id);
   },
 };
 // 发送请求的操作（负责与后端进行交互）
