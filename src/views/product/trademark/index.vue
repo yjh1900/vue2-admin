@@ -202,7 +202,6 @@ export default {
     },
     // 上传头像图片成功
     handleAvatarSuccess(res, file) {
-      // this.imageUrl = URL.createObjectURL(file.raw);
       this.ruleForm.logoUrl = res.data;
       this.$refs["ruleForm"].clearValidate(["logoUrl"]);
       console.log(res.data);

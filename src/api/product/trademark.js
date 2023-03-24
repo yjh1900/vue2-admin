@@ -38,7 +38,7 @@ export const addTrademarkApi = (tmName, logoUrl) => {
   return request({
     url: addTrademark,
     method: "post",
-    data: {
+    params: {
       tmName,
       logoUrl,
     },

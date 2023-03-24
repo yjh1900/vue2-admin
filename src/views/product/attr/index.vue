@@ -1,11 +1,13 @@
 <template>
-  <div />
+  <div>
+    <CategorySelector></CategorySelector>
+  </div>
 </template>
 
 <script>
 export default {
-  name: 'Attr'
-}
+  name: "Attr",
+};
 </script>
 
 <style lang="scss" scoped></style>

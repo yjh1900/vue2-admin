@@ -16,6 +16,8 @@ import "@/icons"; // icon
 import "@/permission"; // permission control
 import "./plugins/element.js";
 
+import CategorySelector from "./components/CategorySelector";
+
 /**
  * If you don't want to use mock-server
  * you want to use MockJs for mock api
@@ -35,6 +37,8 @@ if (process.env.NODE_ENV === "production") {
 Vue.use(ElementUI);
 
 Vue.config.productionTip = false;
+
+Vue.component("CategorySelector", CategorySelector);
 
 new Vue({
   el: "#app",
