@@ -30,7 +30,7 @@
 
         <el-form-item label="SPU图片" prop="spuImageList">
           <el-upload
-            v-model:file-list="ruleForm.spuImageList"
+            :file-list="ruleForm.spuImageList"
             :action="`${BASE_URL}/admin/product/fileUpload`"
             list-type="picture-card"
             :on-preview="handlePictureCardPreview"
@@ -177,19 +177,19 @@ export default {
       this.trademarkList = responseTrademarkList.data;
       this.saleAttrList = responseBaseSaleAttrList.data;
       if (this.ruleForm.id) {
-        // 请求图片和销售属性表格
+        // 请求图片和销售属性表格数据
         const [responseSpuImageList, responseSpuSaleAttrList] =
           await Promise.all([
             getSpuImageListApi(this.ruleForm.id),
             getSpuSaleAttrListApi(this.ruleForm.id),
           ]);
         console.log(responseSpuImageList.data, "ImageList");
+        // 处理图片列表
         this.ruleForm.spuImageList = responseSpuImageList.data.map((item) => {
           return {
+            ...item,
             name: item.imgName,
             url: item.imgUrl,
-            imgUrl: item.imgUrl,
-            imgName: item.imgName,
           };
         });
         this.ruleForm.spuSaleAttrList = responseSpuSaleAttrList.data;
@@ -316,6 +316,8 @@ export default {
       if (this.inputValue) {
         row.spuSaleAttrValueList.push({
           saleAttrValueName: this.inputValue,
+          saleAttrName: row.saleAttrName,
+          baseSaleAttrId: row.baseSaleAttrId,
         });
         this.inputValue = "";
         row.inputVisible = false;
@@ -353,6 +355,8 @@ export default {
       this.ruleForm.spuImageList.push({
         imgName: res.name,
         imgUrl: res.response.data,
+        name: res.name,
+        url: res.response.data,
       });
       console.log(this.ruleForm.spuImageList);
       // ruleFormRef.value.clearValidate(["spuImageList"]);
@@ -378,8 +382,10 @@ export default {
       this.ruleForm.spuSaleAttrList.forEach((item) => {
         item.inputVisible = false;
       });
+
       this.ruleForm.spuSaleAttrList.push({
         inputVisible: true,
+        baseSaleAttrId: this.saleAttr.split(":")[1],
         saleAttrName: this.saleAttr.split(":")[0],
         spuSaleAttrValueList: [],
       });
@@ -412,8 +418,11 @@ export default {
         if (valid) {
           if (!this.ruleForm.id) {
             await saveSpuInfoApi(this.ruleForm);
+            this.$message.success("保存成功");
           } else {
+            console.log(this.ruleForm);
             await postSpuInfoApi(this.ruleForm);
+            this.$message.success("修改成功");
           }
           // 回到spu列表
           this.parent.isShowView = 1;
