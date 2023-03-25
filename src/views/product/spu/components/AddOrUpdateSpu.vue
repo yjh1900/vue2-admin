@@ -43,7 +43,7 @@
             <el-icon>
               <i class="el-icon-plus avatar-uploader-icon"></i>
             </el-icon> </el-upload
-          ><el-dialog v-model="dialogVisible">
+          ><el-dialog :value="dialogVisible">
             <img
               v-if="ruleForm.logoUrl"
               w-full
@@ -101,7 +101,7 @@
                   v-model="inputValue"
                   class="ml-1 w-20"
                   size="small"
-                  @keyup.enter="handleInputConfirm(scope.row)"
+                  @keyup.enter.native="handleInputConfirm(scope.row)"
                   @blur="handleInputConfirm(scope.row)"
                 />
                 <el-button
@@ -123,7 +123,11 @@
                   @confirm="deleteHandle(row)"
                 >
                   <template #reference>
-                    <el-button type="danger" :icon="Delete" size="small" />
+                    <el-button
+                      type="danger"
+                      class="el-icon-delete"
+                      size="small"
+                    />
                   </template>
                 </el-popconfirm>
               </template>
@@ -153,8 +157,6 @@ import {
   postSpuInfoApi,
 } from "@/api/product/spu";
 import { mapState } from "vuex";
-// import { ElMessage, ElInput } from "element-plus";
-// import { useCategoryStore } from "@/stores/category";
 import { beforeLOGOUpload as beforeImageUpload } from "@/utils/tools";
 
 export default {
@@ -162,28 +164,61 @@ export default {
   // 注入
   inject: ["parent"],
   async mounted() {
-    console.log(this.parent.curSpuItem, "inject");
     this.ruleForm = {
       ...this.parent.curSpuItem,
       category3Id: this.category3Id,
+      spuSaleAttrList: [],
+      spuImageList: [],
     };
-
-    // this.ruleForm.category3Id = this.category3Id;
-    // this.ruleForm.spuName = this.parent.curSpuItem?.spuName;
-    // this.ruleForm.tmId = this.parent.curSpuItem?.tmId;
-    // this.ruleForm.description = this.parent.curSpuItem?.description;
-    this.rules.spuSaleAttrList.validator = this.spuSaleAttrListValidator;
     try {
+      // 请求品牌和销售属性列表
       const [responseTrademarkList, responseBaseSaleAttrList] =
         await Promise.all([getAllTrademarkListApi(), getBaseSaleAttrListApi()]);
       this.trademarkList = responseTrademarkList.data;
       this.saleAttrList = responseBaseSaleAttrList.data;
-      console.log(this.saleAttrList, this.trademarkList);
+      if (this.ruleForm.id) {
+        // 请求图片和销售属性表格
+        const [responseSpuImageList, responseSpuSaleAttrList] =
+          await Promise.all([
+            getSpuImageListApi(this.ruleForm.id),
+            getSpuSaleAttrListApi(this.ruleForm.id),
+          ]);
+        console.log(responseSpuImageList.data, "ImageList");
+        this.ruleForm.spuImageList = responseSpuImageList.data.map((item) => {
+          return {
+            name: item.imgName,
+            url: item.imgUrl,
+            imgUrl: item.imgUrl,
+            imgName: item.imgName,
+          };
+        });
+        this.ruleForm.spuSaleAttrList = responseSpuSaleAttrList.data;
+      }
     } catch (err) {
       this.$message.error("获取属性失败了...");
     }
   },
   data: () => {
+    var spuSaleAttrListValidator = (rule, value, callback) => {
+      /*
+        rule 规则信息对象
+        value 校验数据的值
+        callback 是一个函数，必须要调用
+          callback(); 校验通过
+          callback(new Error('错误信息')); 校验失败
+      */
+      //  条件判断不同情况
+      if (!value.length) {
+        callback(new Error("请至少添加一个销售属性"));
+        return;
+      }
+      if (value.some((item) => !item.spuSaleAttrValueList.length)) {
+        callback(new Error("每个属性至少添加一个属性值"));
+        return;
+      }
+      // 一定要调用，校验通过
+      callback();
+    };
     return {
       ruleFormRef: {},
       // process.env:
@@ -197,6 +232,7 @@ export default {
       dialogVisible: false,
       loading: false,
       saleAttr: "", // 销售属性，字符串拼接了名字和id
+      inputValue: "",
       rules: {
         spuName: [
           { required: true, message: "请输入spu名称", trigger: "blur" },
@@ -226,7 +262,7 @@ export default {
         spuSaleAttrList: [
           {
             required: true,
-            validator: {},
+            validator: spuSaleAttrListValidator,
           },
         ],
       },
@@ -243,32 +279,48 @@ export default {
   },
   computed: {
     ...mapState("category", ["category3Id"]),
+    /*
+      销售属性功能
+      对saleAttrList进行过滤，判断基础销售属性在不在spuSaleAttrList中
+        在，过滤
+        不在，保留
+    */
+    // const filteredBaseSaleAttrList = computed(() => {
+    //   return baseSaleAttrList.value.filter((baseSaleAttr) => {
+    //     if (
+    //       spuFormData.spuSaleAttrList.some(
+    //         (spuSaleAttr) => spuSaleAttr.baseSaleAttrId === baseSaleAttr.id
+    //       )
+    //     ) {
+    //       // 在，过滤
+    //       return false;
+    //     }
+    //     // 不在，保留
+    //     return true;
+    //   });
+    // });
+    filterSaleAttrList() {
+      // 根据销售属性表格中的属性来计算，表格里已添加的属性就在下拉框中过滤
+      return this.saleAttrList.filter((item) => {
+        return !this.ruleForm.spuSaleAttrList.some(
+          (i) => i.saleAttrName == item.name
+        );
+      });
+    },
   },
   methods: {
-    spuSaleAttrListValidator(rule, value, callback) {
-      /*
-    rule 规则信息对象
-    value 校验数据的值
-    callback 是一个函数，必须要调用
-      callback(); 校验通过
-      callback(new Error('错误信息')); 校验失败
-  */
-      //  条件判断不同情况
-      if (!value.length) {
-        callback(new Error("请至少添加一个销售属性"));
-        return;
-      }
-      if (value.some((item) => !item.spuSaleAttrValueList.length)) {
-        callback(new Error("每个属性至少添加一个属性值"));
-        return;
-      }
-      // 一定要调用，校验通过
-      callback();
-    },
     handleClose(tag, row) {
       row.spuSaleAttrValueList.splice(row.spuSaleAttrValueList.indexOf(tag), 1);
     },
     handleInputConfirm(row) {
+      if (this.inputValue) {
+        row.spuSaleAttrValueList.push({
+          saleAttrValueName: this.inputValue,
+        });
+        this.inputValue = "";
+        row.inputVisible = false;
+        console.log(row);
+      }
       // if (inputValue.value) {
       //   console.log(row, "row");
       //   // 根据接口数据，向属性值tags列表中添加数据对象
@@ -281,35 +333,96 @@ export default {
       // row.inputVisible = false;
       // inputValue.value = "";
     },
+    // 图片预览窗口
     handlePictureCardPreview(uploadFile) {
-      // dialogImageUrl.value = uploadFile.url!;
-      // dialogVisible.value = true;
+      console.log("Preview");
+      dialogImageUrl.value = uploadFile.url;
+      dialogVisible.value = true;
     },
+    // 删除
     handleRemove(uploadFile, uploadFiles) {
-      console.log(uploadFile, uploadFiles);
+      // console.log(uploadFile, uploadFiles);
     },
     handleUploadExceed() {
       this.$message.error("上传图片总数最多10张");
     },
-
     // 上传成功，清空表单校验结果
-    handleUploadSuccess(uploadFile) {
-      // console.log(ruleForm.spuImageList, "ruleFormRef.spuImageList");
+    handleUploadSuccess(uploadFile, res) {
+      // console.log(this.ruleForm.spuImageList, "ruleFormRef.spuImageList");
+      // console.log(uploadFile, "uploadFile");
+      this.ruleForm.spuImageList.push({
+        imgName: res.name,
+        imgUrl: res.response.data,
+      });
+      console.log(this.ruleForm.spuImageList);
       // ruleFormRef.value.clearValidate(["spuImageList"]);
     },
     // 取消提交重置表单
     resetForm(refForm) {
       if (!refForm) return;
-      // console.log(this.$ref["ruleFormRef"], "refForm");
-      // this.$ref["ruleFormRef"].resetFields();
-      this.parent.curSpuItem = null;
-      this.parent.isShowView = 1;
+      (this.parent.curSpuItem = {
+        category3Id: 0,
+        description: "",
+        id: "",
+        spuImageList: [],
+        spuName: "",
+        spuSaleAttrList: [],
+        tmId: "",
+      }),
+        (this.parent.isShowView = 1);
     },
     beforeImageUpload() {},
-    filterSaleAttrList() {
-      return this.saleAttrList;
+
+    // 添加spuSaleAttrList
+    addSaleAttr() {
+      this.ruleForm.spuSaleAttrList.forEach((item) => {
+        item.inputVisible = false;
+      });
+      this.ruleForm.spuSaleAttrList.push({
+        inputVisible: true,
+        saleAttrName: this.saleAttr.split(":")[0],
+        spuSaleAttrValueList: [],
+      });
+      // // 找到当前点击的行数
+      // const index = this.ruleForm.spuSaleAttrList.indexOf(row);
+      // // 将其他行的input可见置为false
+      // this.ruleForm.spuSaleAttrList = this.ruleForm.spuSaleAttrList.map(
+      //   (item, ind) => {
+      //     if (index === ind) return item;
+      //     item.inputVisible = false;
+      //     return item;
+      //   }
+      // );
+      this.$nextTick(() => {
+        this.$refs["InputRef"].focus();
+      });
+      this.saleAttr = "";
     },
-    addSaleAttr() {},
+    showInput(row) {
+      console.log(row, "showInput");
+
+      row.inputVisible = true;
+      this.$nextTick(() => {
+        this.$refs["InputRef"].focus();
+      });
+    },
+    // 保存表单
+    submitForm(formEL) {
+      this.$refs[formEL].validate(async (valid) => {
+        if (valid) {
+          if (!this.ruleForm.id) {
+            await saveSpuInfoApi(this.ruleForm);
+          } else {
+            await postSpuInfoApi(this.ruleForm);
+          }
+          // 回到spu列表
+          this.parent.isShowView = 1;
+        } else {
+          console.log("error submit!!");
+          return false;
+        }
+      });
+    },
   },
 };
 // 依赖注入

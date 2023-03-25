@@ -166,6 +166,7 @@ export default {
         if (!val) return (this.spuList = []);
         this.getSpuList();
       },
+      immediate: true,
     },
   },
 };
