@@ -278,6 +278,7 @@ export default {
     };
   },
   computed: {
+    // 从vuex映射category模块的category3Id
     ...mapState("category", ["category3Id"]),
     /*
       销售属性功能
@@ -349,22 +350,20 @@ export default {
       this.$message.error("上传图片总数最多10张");
     },
     // 上传成功，清空表单校验结果
-    handleUploadSuccess(uploadFile, res) {
-      // console.log(this.ruleForm.spuImageList, "ruleFormRef.spuImageList");
-      // console.log(uploadFile, "uploadFile");
+    handleUploadSuccess(uploadFile, res, fileList) {
+      // console.log(fileList, uploadFile, "fileList");
       this.ruleForm.spuImageList.push({
         imgName: res.name,
         imgUrl: res.response.data,
         name: res.name,
         url: res.response.data,
       });
-      console.log(this.ruleForm.spuImageList);
       // ruleFormRef.value.clearValidate(["spuImageList"]);
     },
     // 取消提交重置表单
     resetForm(refForm) {
       if (!refForm) return;
-      (this.parent.curSpuItem = {
+      this.parent.curSpuItem = {
         category3Id: 0,
         description: "",
         id: "",
@@ -372,8 +371,8 @@ export default {
         spuName: "",
         spuSaleAttrList: [],
         tmId: "",
-      }),
-        (this.parent.isShowView = 1);
+      };
+      this.parent.isShowView = 1;
     },
     beforeImageUpload() {},
 
@@ -407,9 +406,12 @@ export default {
     showInput(row) {
       console.log(row, "showInput");
 
+      // 在直接这里添加inputVisible属性，会是非响应式的
+      // 需要通过$set设置
       row.inputVisible = true;
+      // this.$set(row, "inputVisible", true);
       this.$nextTick(() => {
-        this.$refs["InputRef"].focus();
+        this.$refs.InputRef.focus();
       });
     },
     // 保存表单

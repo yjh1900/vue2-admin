@@ -55,7 +55,7 @@
               confirm-button-text="确认"
               cancel-button-text="取消"
               :title="`确认删除${row.spuName}吗`"
-              @confirm="deleteHandle(row)"
+              @onConfirm="deleteHandle(row)"
             >
               <template #reference>
                 <div style="display: inline; margin-left: 10px">
@@ -94,7 +94,7 @@
 </template>
 
 <script>
-import { getSpuListApi } from "@/api/product/spu";
+import { getSpuListApi, deleteSpuApi } from "@/api/product/spu";
 import { mapState } from "vuex";
 
 export default {
@@ -130,21 +130,21 @@ export default {
       this.getSpuList();
     },
     addSkuHandle: function (row) {
-      console.log(row);
-      this.curSpuItem = row;
+      this.parent.curSpuItem = row;
       this.parent.isShowView = 3;
-      this.isSpuListShow = false;
     },
-    addHandle: function () {
+    addHandle: function (row) {
       this.parent.isShowView = 2;
-      this.isSpuListShow = false;
     },
     editHandle: function (row) {
       this.parent.curSpuItem = row;
       this.parent.isShowView = 2;
     },
-    deleteHandle: function (row) {
-      // console.log(row);
+    async deleteHandle(row) {
+      if (!row.id) return;
+      await deleteSpuApi(row.id);
+      this.$message.success("删除成功");
+      this.getSpuList();
     },
     getSpuList: async function () {
       this.loading = true;

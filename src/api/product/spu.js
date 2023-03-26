@@ -7,6 +7,7 @@ const getSpuInfo = "/admin/product/getSpuInfo";
 const getSpuImageList = "/admin/product/spuImageList";
 const getSpuSaleAttrList = "/admin/product/spuSaleAttrList";
 const postSpuInfo = "/admin/product/updateSpuInfo";
+const deleteSpu = "/admin/product/deleteSpu";
 
 export const getSpuListApi = ({ page, limit, category3Id }) => {
   return request.get(
@@ -36,4 +37,8 @@ export const getSpuSaleAttrListApi = (spuId) => {
 
 export const postSpuInfoApi = (data) => {
   return request.post(postSpuInfo, data);
+};
+
+export const deleteSpuApi = (spuId) => {
+  return request.delete(deleteSpu + `/${spuId}`);
 };

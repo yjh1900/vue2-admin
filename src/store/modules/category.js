@@ -48,7 +48,6 @@ const actions = {
   },
   async getCategory2List({ commit }, c1Id) {
     const list2 = await getCategory2Api(c1Id);
-
     commit("GET_CATEGORY_2_LIST", { list2: list2.data, c1Id });
   },
   async getCategory3List({ commit }, c2Id) {

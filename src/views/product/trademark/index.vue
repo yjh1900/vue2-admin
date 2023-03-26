@@ -61,7 +61,6 @@
               type="danger"
               size="small"
               class="el-icon-delete"
-              @click="delTrademark(row.id)"
             />
           </el-popconfirm>
         </template>
@@ -222,7 +221,7 @@ export default {
     submitForm(formName) {
       this.$refs[formName].validate((valid) => {
         if (valid) {
-          if (ruleForm.id) {
+          if (this.ruleForm.id) {
             this.$message.success("修改成功");
             this.reqUpdateTrademark();
           } else {
@@ -239,10 +238,12 @@ export default {
     // 添加品牌
     async reqAddTrademark() {
       await addTrademarkApi(this.ruleForm.tmName, this.ruleForm.logoUrl);
+      this.getTrademarkList();
     },
     // 更新
     async reqUpdateTrademark() {
-      await updateTrademarkApi(ruleForm);
+      await updateTrademarkApi(this.ruleForm);
+      this.getTrademarkList();
     },
     // 删除
     async delTrademark(id) {
